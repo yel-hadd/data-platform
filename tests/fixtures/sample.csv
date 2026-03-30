@@ -1,0 +1,4 @@
+order_id,customer_name,country,product,quantity,price,order_date
+ORD-001,Alice Martin,FR,Widget,2,9.99,2024-01-15
+ORD-002,Bob Smith,DE,Gadget,1,24.50,2024-01-16
+ORD-003,Carol Lee,US,Widget,5,9.99,2024-01-17

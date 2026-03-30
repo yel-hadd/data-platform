@@ -1,0 +1,43 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "datapipeline"
+version = "0.1.0"
+requires-python = ">=3.13"
+dependencies = [
+  "fastapi>=0.115",
+  "sqlalchemy[asyncio]>=2.0",
+  "asyncpg>=0.30",
+  "pydantic>=2.10",
+  "pydantic-settings>=2.7",
+  "pyarrow>=18",
+  "pandas>=2.2",
+  "openpyxl>=3.1",
+  "typer>=0.12",
+  "uvicorn[standard]>=0.30",
+  "httpx>=0.27",
+  "pydantic-ai>=1.0",
+  "pgvector>=0.3",
+  "alembic>=1.14",
+  "psycopg2-binary>=2.9",
+]
+
+[project.scripts]
+datapipeline = "datapipeline.cli:app"
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8",
+  "pytest-asyncio>=0.23",
+  "aiosqlite>=0.20",
+  "pytest-mock>=3.14",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/datapipeline"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
