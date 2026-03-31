@@ -16,6 +16,7 @@ app = typer.Typer(
         "Run 'datapipeline COMMAND --help' for detailed usage of any command."
     ),
     no_args_is_help=True,
+    context_settings={"help_option_names": ["-h", "--help"]},
 )
 
 
@@ -121,6 +122,10 @@ def run(
     from .storage.database import init_db
 
     configure_logging(settings.log_level)
+
+    if not data_dir.exists():
+        typer.echo(f"Error: directory '{data_dir}' does not exist.", err=True)
+        raise typer.Exit(code=1)
 
     async def _run() -> None:
         await init_db()
@@ -247,6 +252,28 @@ def migrate(
     typer.echo(f"Upgrading to     : {revision}")
 
     cfg = Config("alembic.ini")
+
+    # When there is no recorded revision but the schema already exists (created
+    # by init_db() at API startup), stamp the database to head so that Alembic
+    # knows the current state without re-running the DDL.
+    if before == "(none)" and revision in ("head", "001"):
+        try:
+            from sqlalchemy import inspect as sa_inspect
+            engine = create_engine(sync_url)
+            inspector = sa_inspect(engine)
+            if inspector.has_table("orders"):
+                typer.echo(
+                    "  Schema already present (created by init_db). "
+                    "Stamping Alembic revision to head …"
+                )
+                command.stamp(cfg, "head")
+                after = _current_rev()
+                typer.echo(f"New revision     : {after}")
+                typer.echo("Migrations complete.")
+                return
+        except Exception:
+            pass  # fall through to normal upgrade
+
     command.upgrade(cfg, revision)
 
     after = _current_rev()
@@ -463,13 +490,15 @@ def generate_data(
     tmp_json.unlink()
     typer.echo(f"  Created {output_dir}/archive.zip (CSV + JSON, {zip_n} rows each)")
 
-    # Unstructured TEXT — natural-language order descriptions for AI extraction demo
-    txt_rows = [r for r in [_make_row(i + 7000, 0.0) for i in range(10)] if r["order_id"]]
+    # Unstructured TEXT — natural-language order descriptions for AI extraction demo.
+    # Scale with --rows (capped at 10 for cost reasons; minimum 1).
+    txt_n = max(1, min(10, int(rows * 0.02)))
+    txt_rows = [r for r in [_make_row(i + 7000, 0.0) for i in range(txt_n)] if r["order_id"]]
     lines = [
         f"Customer {r['customer_name']} from {r['country']} placed order "
         f"{r['order_id']} for {r['quantity']} unit(s) of {r['product']} "
         f"at ${r['price']} each on {r['order_date']}."
-        for r in txt_rows[:10]
+        for r in txt_rows[:txt_n]
     ]
     (output_dir / "unstructured_orders.txt").write_text("\n".join(lines))
     typer.echo(f"  Created {output_dir}/unstructured_orders.txt ({len(lines)} order descriptions)")

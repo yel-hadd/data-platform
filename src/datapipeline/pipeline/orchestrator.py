@@ -71,7 +71,10 @@ async def process_file(
                 except Exception as exc:
                     result.invalid += 1
                     await insert_error(session, str(path), raw, str(exc))
-                    logger.warning("Rejected row from %s: %s", path.name, exc)
+                    # Show only the first line of the Pydantic error (summary).
+                    # The full error is persisted to ingestion_errors for audit.
+                    summary = str(exc).splitlines()[0]
+                    logger.warning("Rejected row from %s: %s", path.name, summary)
 
             result.valid = await insert_orders(session, valid_records)
 

@@ -53,7 +53,7 @@ _INVALID_EXTRACTED = [
 def _mock_agent_run(extracted: list[ExtractedOrder]):
     """Return a mock that simulates agent.run() returning *extracted*."""
     result = MagicMock()
-    result.response = extracted
+    result.output = extracted
     mock_run = AsyncMock(return_value=result)
     return mock_run
 

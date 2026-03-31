@@ -9,9 +9,9 @@ services:
       - pgdata:/var/lib/postgresql/data
       - ./sql/init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
-      - "5432:5432"
+      - "5433:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U pipeline"]
+      test: ["CMD-SHELL", "pg_isready -U pipeline -d dataplatform"]
       interval: 5s
       timeout: 5s
       retries: 5

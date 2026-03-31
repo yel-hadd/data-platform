@@ -53,25 +53,25 @@ async def semantic_search(
     Returns:
         List of dicts with keys ``source_file``, ``content``, ``similarity`` (0–1).
     """
-    # Build the pgvector cosine distance expression as text to keep the query
-    # portable across SQLAlchemy dialects in tests.
-    stmt = (
-        select(
-            DocumentChunk.source_file,
-            DocumentChunk.content,
-            (
-                text("1 - (embedding <=> CAST(:vec AS vector))")
-            ).bindparams(vec=str(query_embedding)).label("similarity"),
-        )
-        .order_by(text("embedding <=> CAST(:vec AS vector)").bindparams(vec=str(query_embedding)))
-        .limit(limit)
+    # Use pgvector's cosine distance operator (<=>).
+    # We pass the vector as a plain SQL literal to avoid driver-level type-quoting
+    # issues with the vector[] type.
+    # Raise ivfflat.probes so small tables (few clusters populated) are searched fully.
+    vec_literal = str(query_embedding)  # e.g. "[0.1, 0.2, ...]"
+    await session.execute(text("SET ivfflat.probes = 100"))
+    stmt = text(
+        "SELECT source_file, content, "
+        f"  1 - (embedding <=> '{vec_literal}'::vector) AS similarity "
+        "FROM document_chunks "
+        f"ORDER BY embedding <=> '{vec_literal}'::vector "
+        f"LIMIT {int(limit)}"
     )
-    rows = (await session.execute(stmt)).all()
+    rows = (await session.execute(stmt)).mappings().all()
     return [
         {
-            "source_file": r.source_file,
-            "content":     r.content,
-            "similarity":  float(r.similarity),
+            "source_file": r["source_file"],
+            "content":     r["content"],
+            "similarity":  float(r["similarity"]),
         }
         for r in rows
     ]

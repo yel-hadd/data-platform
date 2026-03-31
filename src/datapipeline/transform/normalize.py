@@ -52,15 +52,19 @@ _FIELD_MAP: dict[str, dict[str, str]] = {
         "price":         "price",
         "order_date":    "order_date",
     },
-    # ZIP extracts its inner files which then map through their own source types.
+    # ZIP: inner files can be CSV (snake_case) or JSON (camelCase) — handle both.
     "zip": {
         "order_id":      "order_id",
+        "orderId":       "order_id",
         "customer_name": "customer_name",
+        "customer":      "customer_name",
+        "Customer":      "customer_name",
         "country":       "country",
         "product":       "product",
         "quantity":      "quantity",
         "price":         "price",
         "order_date":    "order_date",
+        "Order ID":      "order_id",
     },
 }
 

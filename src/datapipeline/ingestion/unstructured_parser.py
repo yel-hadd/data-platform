@@ -89,7 +89,7 @@ async def parse_text(
     logger.info("Sending %d chars to PydanticAI for extraction from %s", len(text), source_file)
 
     result = await agent.run(text)
-    extracted: list[ExtractedOrder] = result.response
+    extracted: list[ExtractedOrder] = result.output
 
     valid_records: list[OrderRecord] = []
     for raw in extracted:
